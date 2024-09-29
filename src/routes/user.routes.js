@@ -7,7 +7,7 @@ import { register, login } from '../controllers/user.controller.js';
 const userRouter = Router()
 
 
-userRouter.get("/login", login);
+userRouter.post("/login", login);
 userRouter.post("/register", register);
 
 

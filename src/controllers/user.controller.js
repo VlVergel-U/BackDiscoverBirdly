@@ -1,5 +1,5 @@
 import User from '../models/user.model.js';
-
+import bcrypt from 'bcrypt';
 
 export async function login(req, res){
     
@@ -28,9 +28,10 @@ export async function login(req, res){
 
 
 export async function register (req, res) {
-    const { firstName, secondName, firstlastName, secondLastName, dateOfBirth, gender, department, municipality, occupation, email, password} = req.body;
+    
+    const { firstName, secondName, firstlastName, secondlastName, birth, gender, department, municipality, occupation, email, password} = req.body;
 
-    if (!firstName || !firstlastName || !secondlastName || !dateOfBirth || !gender || !department || !municipality || !occupation || !email || !password) {
+    if (!firstName || !firstlastName || !secondlastName || !birth || !gender || !department || !municipality || !occupation || !email || !password) {
         return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -41,7 +42,7 @@ export async function register (req, res) {
             firstName,
             secondName,
             firstlastName,
-            secondLastName,
+            secondlastName,
             birth,
             gender,
             department,

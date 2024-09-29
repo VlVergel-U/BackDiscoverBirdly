@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
-const userSchema = new Schema({
+const user = new Schema({
 
     firstName: { type: String, required: true },
     secondName: { type: String, default: "" }, 
@@ -19,9 +19,10 @@ const userSchema = new Schema({
     isActive: { type: Boolean, default: true }  
     
   }, {
-    timestamps: true 
+    timestamps: true,
+    versionKey: false
   });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', user);
 
 export default User;
