@@ -7,7 +7,7 @@ const municipality = new Schema({
     type: Number,
     required: true
   },
-  nombre: {
+  name: {
     type: String,
     required: true
   },
@@ -27,7 +27,7 @@ const department = new Schema({
     type: Number,
     required: true
   },
-  nombre: {
+  name: {
     type: String,
     required: true
   },
