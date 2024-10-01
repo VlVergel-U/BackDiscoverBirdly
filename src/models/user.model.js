@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-const Schema = mongoose.Schema;
+const { Schema } = mongoose;
 
 const user = new Schema({
 
@@ -28,15 +28,15 @@ const user = new Schema({
       enum: ['Male', 'Female'], 
       required: true 
     },
-    department: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'Ubication', 
-      required: true 
-    }, 
-    municipality: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'Ubication', 
-      required: true 
+    department: {
+      type: Number,
+      ref: 'Ubication.departments',
+      required: true
+    },
+    municipality: {
+      type: Number,
+      ref: 'Ubication.departments.municipalities',
+      required: true
     },
     occupation: { 
       type: String, 

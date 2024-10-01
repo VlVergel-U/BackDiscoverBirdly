@@ -2,11 +2,13 @@ import express from "express";
 import cors from "cors";
 import connectionbd from "./config/connectionbd.js";
 import indexRouter from "./routes/index.routes.js";
+import { createDepartment } from "./controllers/department.controller.js";
 
 async function main() {
     try {
         const server = express();
         await connectionbd();
+        await createDepartment();
         server.use(express.json());
         server.use(cors());
         server.use(indexRouter);

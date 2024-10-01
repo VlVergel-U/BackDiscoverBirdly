@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
 
 const bird = new Schema({
 
@@ -37,6 +37,9 @@ const bird = new Schema({
     ref: 'Ubication', 
     required: true 
   }
+}, {
+  timestamps: true,
+  versionKey: false
 });
 
 
