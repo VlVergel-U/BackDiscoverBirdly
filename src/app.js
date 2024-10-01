@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import connectionbd from "./config/connectionbd.js";
-import indexRouter from "./routes/index.router.js";
+import indexRouter from "./routes/index.routes.js";
 
 async function main() {
     try {

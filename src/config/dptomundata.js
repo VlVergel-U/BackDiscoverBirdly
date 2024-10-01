@@ -1,5 +1,3 @@
-
-
 const ubicationData = {
 
     "_id": 54,
