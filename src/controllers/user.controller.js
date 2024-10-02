@@ -119,9 +119,8 @@ export async function getAllUsers(req, res) {
 }
 
 export async function updateUser(req, res) {
-
     const { username } = req.params;
-    const { email, password } = req.body;
+    const { email, password, newUsername } = req.body;
 
     const user = await User.findOne({ username });
 
@@ -129,17 +128,17 @@ export async function updateUser(req, res) {
         return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const updatedUser = {};
-    if (username) updatedUser.username = username;
-    if (email) updatedUser.email = email;
-    if (password) updatedUser.password = await bcrypt.hash(password, 10);
+    const updatedUser  = {};
+    if (newUsername) updatedUser .username = newUsername;
+    if (email) updatedUser .email = email;
+    if (password) updatedUser .password = await bcrypt.hash(password, 10);
 
     try {
-        await User.updateOne({ _id: id }, { $set: updatedUser });
+        await User.updateOne({ _id: user._id }, { $set: updatedUser  });
         res.status(200).json({
             success: true,
             msg: "Usuario actualizado exitosamente",
-            data: updatedUser
+            data: updatedUser 
         });
     } catch (error) {
         console.error("Error actualizando usuario:", error);
@@ -151,7 +150,7 @@ export async function deleteUser(req, res){
 
     const {username} = req.params;
 
-    const validateCreated = await User.getAllUsers();
+    const validateCreated = await User.find();
  
     if(validateCreated.length === 0){
         return res.status(404).json({ message: 'No hay usuarios creados' });
@@ -163,7 +162,7 @@ export async function deleteUser(req, res){
         return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    await user.remove();
+    await User.deleteOne({ username });
 
     res.status(200).json({
         sucess: true,
