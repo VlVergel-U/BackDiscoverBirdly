@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
-const municipalitySchema = new Schema({
+const municipality = new Schema({
   _id: {
     type: Number,
     required: true,
@@ -20,7 +20,7 @@ const municipalitySchema = new Schema({
   },
 }, { _id: false });
 
-const departmentSchema = new Schema({
+const department = new Schema({
   _id: {
     type: Number,
     required: true,
@@ -37,12 +37,12 @@ const departmentSchema = new Schema({
     type: Number,
     required: true,
   },
-  municipalities: [municipalitySchema],
+  municipalities: [municipality],
 }, {
   timestamps: false,
   versionKey: false,
 });
 
-const Department = mongoose.model('Department', departmentSchema);
+const Department = mongoose.model('Department', department);
 
 export default Department;

@@ -21,7 +21,13 @@ const user = new Schema({
     },  
     birth: { 
       type: Date, 
-      required: true 
+      required: true,
+      validate: {
+        validator: function(birth) {
+          return birth instanceof Date && birth.getTime() > 0;
+        },
+        message: 'Invalid birth date'
+      }
     },
     gender: { 
       type: String, 
@@ -30,12 +36,11 @@ const user = new Schema({
     },
     department: {
       type: Number,
-      ref: 'Ubication.departments',
+      ref: 'Department',
       required: true
     },
     municipality: {
       type: Number,
-      ref: 'Ubication.departments.municipalities',
       required: true
     },
     occupation: { 
@@ -46,16 +51,34 @@ const user = new Schema({
     username: { 
       type: String, 
       required: true, 
-      unique: true 
+      unique: true,
+      validate: {
+        validator: function(username) {
+          return /^[a-zA-Z0-9]+$/.test(username);
+        },
+        message: 'Invalid username. Only letters and numbers are allowed.'
+      }
     }, 
     email: { 
       type: String, 
       required: true, 
-      unique: true 
+      unique: true,
+      validate: {
+        validator: function(email) {
+          return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+        },
+        message: 'Invalid email address'
+      } 
     },  
     password: { 
       type: String, 
-      required: true 
+      required: true,
+      validate: {
+        validator: function(password) {
+          return /^[a-zA-Z0-9]{8,}$/.test(password);
+        },
+        message: 'Invalid password. Password should be at least 8 characters long and contain only letters and numbers.'
+      }
     }, 
     createdAt: { 
       type: Date, 
