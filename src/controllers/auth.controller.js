@@ -3,10 +3,10 @@ import bcrypt from 'bcrypt';
 
 export async function login(req, res){
     
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
     try {
-        const searchUser = await User.findOne({ email });
+        const searchUser = await User.findOne({ username });
 
         if (!searchUser) {
             return res.status(401).json({ error: "Incorrect credentials" });

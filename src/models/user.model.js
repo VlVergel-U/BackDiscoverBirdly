@@ -52,13 +52,14 @@ const user = new Schema({
       type: String, 
       required: true, 
       unique: true,
+      minlength: 8,
       validate: {
         validator: function(username) {
           return /^[a-zA-Z0-9]+$/.test(username);
         },
         message: 'Invalid username. Only letters and numbers are allowed.'
       }
-    }, 
+    },
     email: { 
       type: String, 
       required: true, 
@@ -75,7 +76,7 @@ const user = new Schema({
       required: true,
       validate: {
         validator: function(password) {
-          return /^[a-zA-Z0-9]{8,}$/.test(password);
+          return /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/.test(password);
         },
         message: 'Invalid password. Password should be at least 8 characters long and contain only letters and numbers.'
       }

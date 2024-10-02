@@ -259,3 +259,14 @@ export async function createDepartment() {
     console.error('Error al crear el departamento:', error.message);
   }
 }
+
+
+export async function getDepartments(req, res){
+
+  try {
+    const departments = await Department.find();
+    res.status(200).json(departments);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener los departamentos', error });
+  }
+};

@@ -4,9 +4,9 @@ import Department from '../models/department.model.js';
 
 export async function createUser (req, res) {
     
-    const { firstName, secondName, firstlastName, secondlastName, birth, gender, department, municipality, occupation, username, email, password} = req.body;
+    const { name, lastName, birth, gender, department, municipality, occupation, username, email, password} = req.body;
 
-    if (!firstName || !firstlastName || !secondlastName || !birth || !gender || !department || !municipality || !occupation || !username || !email || !password) {
+    if (!name || !lastName || !birth || !gender || !department || !municipality || !occupation || !username || !email || !password) {
         return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -21,6 +21,15 @@ export async function createUser (req, res) {
     if (!municipalityFind) {
       throw new Error(`Municipality not found: ${municipality} in department: ${department}`);
     }
+
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0];
+    const secondName = nameParts.slice(1).join(' '); 
+
+    const lastNameParts = lastName.split(' ');
+    const firstlastName = lastNameParts[0]; 
+    const secondlastName = lastNameParts.slice(1).join(' ');
+
 
     try {
         const user = new User({
