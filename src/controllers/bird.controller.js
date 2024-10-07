@@ -1,86 +1,101 @@
 import axios from 'axios';
 import dotenv from 'dotenv'
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import Bird from '../models/bird.model.js';
 
 dotenv.config()
-const apiKey = process.env.chatgptkey;
+const geminiKey = process.env.gemini_key;
+const genAI = new GoogleGenerativeAI(geminiKey);
 
-export async function getData(req, res){
+// export async function getData(req, res){
 
-  try {
+//   try {
 
-    const response = await axios.get('https://www.inaturalist.org/observations.json?place_id=12738&taxon_id=3');
+//     const response = await axios.get('https://www.inaturalist.org/observations.json?place_id=12738&taxon_id=3');
 
-    const birdData = response.data.map(observation => ({
-      latitude: observation.latitude,
-      longitude: observation.longitude,
-      place_guess: observation.place_guess,
-      species_guess: observation.species_guess,
-      taxon: {
-        id: observation.taxon?.id,
-        name: observation.taxon?.name,
-        rank: observation.taxon?.rank,
-        ancestry: observation.taxon?.ancestry,
-        common_name: {
-          id: observation.taxon?.common_name?.id,
-          name: observation.taxon?.common_name?.name,
-          is_valid: observation.taxon?.common_name?.is_valid,
-          lexicon: observation.taxon?.common_name?.lexicon
-        }
-      },
-      photos: observation.photos.length > 0 ? observation.photos.map(photo => ({
-        large_url: photo.large_url
-      })) : []
-    }));
+//     const birdData = response.data.map(observation => ({
+//       latitude: observation.latitude,
+//       longitude: observation.longitude,
+//       place_guess: observation.place_guess,
+//       species_guess: observation.species_guess,
+//       taxon: {
+//         id: observation.taxon?.id,
+//         name: observation.taxon?.name,
+//         common_name: {
+//           id: observation.taxon?.common_name?.id,
+//           name: observation.taxon?.common_name?.name,
+//         }
+//       },
+//       photos: observation.photos.length > 0 ? observation.photos.map(photo => ({
+//         large_url: photo.large_url
+//       })) : []
+//     }));
 
-    res.status(200).json({
-        success: true,
-        msg: "Aves obtenidas exitosamente",
-        data: birdData
-    })
+//     return res.json(birdData);
 
-    // for (const bird of birdData) {
-    //     const description = await getDescription(bird.taxon.name);
-    //     console.log(`Descripción de ${bird.taxon.name}:`, description);
-    //   }
+//   } catch (error) {
+//     console.error('Error al obtener o guardar los datos:', error);
+//     return res.status(500).json({ message: 'Error al obtener los datos' });
+//   }
+// };
 
-    // console.log(getDescription("loro"));
-
-  } catch (error) {
-    console.error('Error al obtener o guardar los datos:', error);
-  }
-};
 
 
 async function getDescription(birdName){
-    try {
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: "gpt-3.5", 
-          messages: [
-            { role: "system", content: "Eres un experto en aves" },
-            { role: "user", content: `Dame una descripción de esta ave ${birdName}, dandome en una lista, si es endemica, si esta en peligro de extincion, que come, de que ecosistema es y una descripcion en general.` }
-          ],
-          temperature: 0.7
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-  
-      return response.data.choices[0].message.content;
-  
-    } catch (error) {
-      console.error('Error al consultar ChatGPT:', error);
-      return 'Descripción no disponible';
-    }
+
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+  const chat = model.startChat({
+    history: [
+      {
+        role: "user",
+        parts: [{ text: "Hola necesito que te vuelvas experto en aves." }],
+      },
+      {
+        role: "model",
+        parts: [{ text: "Qué quieres saber?" }],
+      },
+    ],
+    generationConfig: {
+      maxOutputTokens: 100,
+    },
+  });
+
+  const msg = `Dame una descripción clara y concisa de la especie ${birdName}, incluyendo si es endémica, su alimentación, en qué ecosistema vive, y una descripción general. No preguntes nada más, solo responde esos datos en un parrafo`;
+
+  const result = await chat.sendMessage(msg);
+  const response = await result.response;
+  const text = response.text();
+  return text;
+
   };
 
-  export async function createBirds(birdData){
+  export async function createBirds(req, res){
 
+    try {
+      const response = await axios.get('https://www.inaturalist.org/observations.json?place_id=12738&taxon_id=3');
+  
+      const birds = response.data.map(async (observation) => {
 
+        const newBird = new Bird({
+          _id: observation.id, 
+          name: observation.taxon?.name, 
+          specie: observation.species_guess, 
+          url_photo: observation.photos.length > 0 ? observation.photos[0].large_url : 'foto no disponible', // Cambiado para incluir "foto no disponible"
+          ubication: observation.place_guess
+        });
+  
+        return newBird.save(); 
+      });
+  
+      const savedBirds = await Promise.all(birds); 
+  
+      return res.status(201).json({
+       message: "Birds created succesfully",
+       data: savedBirds 
+      }); 
+  
+    } catch (error) {
+      return res.status(500).json({ message: 'Error creating birds' }); 
+    }
 
   };

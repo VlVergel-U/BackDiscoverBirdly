@@ -19,26 +19,12 @@ const bird = new Schema({
     type: String,
     required: true
   },
-  description: {
-    type: String,
-    required: true
-  },
-  ecosystem: {
-    type: String,
-    required: true
-  },
-  department: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Ubication', 
-    required: true 
-  }, 
-  municipality: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Ubication', 
+  ubication: { 
+    type: String, 
     required: true 
   }
 }, {
-  timestamps: true,
+  timestamps: false,
   versionKey: false
 });
 
