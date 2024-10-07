@@ -99,3 +99,28 @@ async function getDescription(birdName){
     }
 
   };
+
+  export async function getBirds(req, res){
+
+    try{
+
+      const birds = await Bird.find()
+
+      if (birds.length === 0) {
+        return res.status(404).json({ message: 'No hay aves creadas' });
+      }
+  
+      res.status(200).json({
+        success: true,
+        msg: "Aves obtenidas exitosamente",
+        data: birds
+      });
+  
+
+    }catch{
+      throw res.status(500).json({ message: 'Error getting birds' }); 
+    }
+
+
+
+  };
