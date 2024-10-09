@@ -363,11 +363,18 @@ export async function createDepartment() {
 }
 
 
-export async function getDepartments(req, res){
-
+export async function getDepartments(req, res) {
   try {
-    const departments = await Department.find();
-    res.status(200).json(departments);
+    const departments = await Department.find().select('name municipalities');
+
+    const result = departments.map(dept => ({
+      name: dept.name,
+      municipalities: dept.municipalities.map(mun => ({
+        name: mun.name
+      }))
+    }));
+
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los departamentos', error });
   }

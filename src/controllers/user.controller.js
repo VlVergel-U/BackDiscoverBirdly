@@ -7,7 +7,10 @@ export async function createUser (req, res) {
     const { name, lastName, birth, gender, department, municipality, occupation, username, email, password} = req.body;
 
     if (!name || !lastName || !birth || !gender || !department || !municipality || !occupation || !username || !email || !password) {
-        return res.status(400).json({ message: "All fields are required." });
+        return res.status(400).json({ 
+          message: "All fields are required",
+          req: req.body
+         });
     }
 
     const passwordEncrypted = await bcrypt.hash(password, 10);
@@ -180,4 +183,50 @@ export async function deleteUser(req, res){
     })
 
     
+}
+
+export async function userNoActive(req, res) {
+  try {
+      const result = await User.updateMany(
+          { isActive: true }, 
+          { $set: { isActive: false } }
+      );
+
+      if (result.matchedCount === 0) {
+          return res.status(404).json({ message: 'No se encontraron usuarios activos para desactivar.' });
+      }
+
+      res.status(200).json({ message: `Se desactivaron ${result.modifiedCount} usuarios.` });
+  } catch (error) {
+      console.error("Error al desactivar usuarios:", error);
+      res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+}
+
+
+
+export async function changeUsername(req, res) {
+
+  const { username } = req.params;
+  const { newUsername } = req.body;
+
+  try {
+      const user = await User.findOne({ username });
+
+      if (!user) {
+          return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      const newUser = {
+          ...user.toObject(), 
+          username: newUsername 
+      };
+
+      const result = await User.replaceOne({ _id: user._id }, newUser);
+
+      res.status(200).json({ message: 'Usuario cambiado exitosamente'});
+  } catch (error) {
+      console.error("Error al cambiar el usuario:", error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+  }
 }
