@@ -1,5 +1,11 @@
 import User from '../models/user.model.js';
 import { generateHash, comparePswdAndHash } from '../utils/credentials.util.js'
+import jwt from 'jsonwebtoken'
+import dotenv from 'dotenv'
+import { getEmailTemplate } from '../templates/email.templates.js';
+import { sendEmail } from '../utils/email.util.js';
+
+dotenv.config()
 
 export async function login(req, res){
     
@@ -60,11 +66,7 @@ export async function resetPassword(req, res){
 
             const { email } = req.params;
       
-            const user = await User.findOne({
-              where: {
-                email: email
-              }
-            });
+            const user = await User.findOne({email});
       
             if(!user) {
               return res.json({
@@ -78,7 +80,7 @@ export async function resetPassword(req, res){
                 data: {
                     username: user.username,
                 },
-            }, environment.jwt_hash);
+            }, process.env.jwt_hash);
       
             const data = {
               nameUser: user.username,

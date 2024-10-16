@@ -10,7 +10,7 @@ const authRouter = Router()
 
 authRouter.post("/login", login);
 authRouter.post("/register", createUser);
-authRouter.post("/send/:email", sendResetPasswordEmail);
+authRouter.post("/sendResetEmail/:email", sendResetPasswordEmail);
 authRouter.post("/resetPassword/:token", resetPassword);
 
 

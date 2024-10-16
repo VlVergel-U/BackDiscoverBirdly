@@ -1,7 +1,5 @@
 import nodemailer from 'nodemailer';
 import { mail } from '../config/email.config.js';
-import { getEmailTemplate } from '../templates/email.templates.js';
-
 
 const emailTransporter = nodemailer.createTransport({
 service: 'gmail',
@@ -10,14 +8,22 @@ port: mail.port,
   auth: {
     user: mail.user,
     pass: mail.pass
+  },
+  tls: {
+    rejectUnauthorized: false 
   }
 });
 
-export const emailOptions = async (email, subject, html) => {
-    await emailTransporter.sendMail({
-      from: mail.user,
-      to: email,
-      subject: subject,
-      html: html
-    });
+export const sendEmail = async (email, subject, html) => {
+    try {
+        await emailTransporter.sendMail({
+          from: mail.user,
+          to: email,
+          subject: subject,
+          html: html
+        });
+        console.log('Correo enviado exitosamente');
+      } catch (error) {
+        console.error('Error al enviar el correo:', error);
+      }
   };
