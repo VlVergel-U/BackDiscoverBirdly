@@ -25,29 +25,8 @@ export async function login(req, res){
 
 export async function resetPassword(req, res){
     try {
-      
-        const { token } = req.params;
+        const { username } = req.params;
         const { password, password2 } = req.body;
-  
-        const userPassword = await User.findOne({
-          where: {
-            token: token
-          }
-        });
-  
-        if (!userPassword) {
-          return res.json({
-            success: false,
-            msg: 'Error: Debe enviar solicitud por correo'
-          });
-        }
-  
-        if(userPassword.getDataValue('isUsed') === true) {
-          return res.json({
-            success: false,
-            msg: 'Error: el token ya se usó o expiró'
-          });
-        }
   
         if (password !== password2) {
           return res.json({
@@ -56,10 +35,7 @@ export async function resetPassword(req, res){
           });
         }
   
-        userPassword.setDataValue('isUsed', true);
-        await userPassword.save();
-  
-        const user = await User.findByPk(userPassword.getDataValue('userId'));
+        const user = await User.findOne({ username });
         const passwordHash = generateHash(password);
         user.setDataValue('password', passwordHash);
   
@@ -97,36 +73,21 @@ export async function resetPassword(req, res){
               });
             }
       
-            let userPassword = await UserPassword.findOne({
-              where: {
-                userId: user.getDataValue('id'),
-                isUsed: false
-              }
-            });
-      
-            if (userPassword) {
-              userPassword.setDataValue('isUsed', true);
-              await userPassword.save();
-            }
-      
-            const token = generateRandomString(16);
-      
-            userPassword = new UserPassword({
-              userId: user.getDataValue('id'),
-              email: email,
-              token: token,
-              is_used: false
-            });
+            const token = jwt.sign({
+                exp: Math.floor(Date.now() / 1000) + (60 * 60),
+                data: {
+                    username: user.username,
+                },
+            }, environment.jwt_hash);
       
             const data = {
-              email: email,
+              nameUser: user.username,
               token: token
             }
       
             const emailHTMLTemplate = getEmailTemplate(data);
       
             await sendEmail(email, 'Recuperar contraseña', emailHTMLTemplate);
-            await userPassword.save();
       
             res.json({
               success: true,

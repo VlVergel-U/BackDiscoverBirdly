@@ -13,11 +13,11 @@ port: mail.port,
   }
 });
 
-export const emailOptions = async (email, nameUser, token) => {
+export const emailOptions = async (email, subject, html) => {
     await emailTransporter.sendMail({
       from: mail.user,
       to: email,
-      subject: "Reset Password",
-      html: getEmailTemplate(token, nameUser)
+      subject: subject,
+      html: html
     });
   };
