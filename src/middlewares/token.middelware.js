@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken"
-import config from "../config/bd.config";
+import config from "../config/bd.config.js";
 
 export const verifyToken = (req, res, next) =>{
  const token = req.header("Authorization");
