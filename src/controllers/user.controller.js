@@ -1,6 +1,7 @@
 import User from '../models/user.model.js';
 import bcrypt from 'bcrypt';
 import Department from '../models/department.model.js';
+import { generateHash } from '../utils/credentials.util.js'
 
 export async function createUser (req, res) {
     
@@ -13,7 +14,7 @@ export async function createUser (req, res) {
          });
     }
 
-    const passwordEncrypted = await bcrypt.hash(password, 10);
+    const passwordEncrypted = generateHash(password);
 
     const departmentModel = await Department.findOne({ 'name': department });
     if (!departmentModel) {

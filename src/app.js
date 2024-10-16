@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import connectionbd from "./config/connectionbd.js";
+import connectionbd from "./config/bd.config.js";
 import indexRouter from "./routes/index.routes.js";
 import { createDepartment } from "./controllers/department.controller.js";
 
