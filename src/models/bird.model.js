@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const bird = new Schema({
 
   _id: {
-    type: Number,
+    type: String,
     required: true
   },
   name: {
@@ -20,8 +20,8 @@ const bird = new Schema({
     required: true
   },
   ubication: { 
-    type: String, 
-    required: true 
+    type: String,
+    required: true
   }
 }, {
   timestamps: false,

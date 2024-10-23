@@ -7,40 +7,6 @@ dotenv.config()
 const geminiKey = process.env.gemini_key;
 const genAI = new GoogleGenerativeAI(geminiKey);
 
-// export async function getData(req, res){
-
-//   try {
-
-//     const response = await axios.get('https://www.inaturalist.org/observations.json?place_id=12738&taxon_id=3');
-
-//     const birdData = response.data.map(observation => ({
-//       latitude: observation.latitude,
-//       longitude: observation.longitude,
-//       place_guess: observation.place_guess,
-//       species_guess: observation.species_guess,
-//       taxon: {
-//         id: observation.taxon?.id,
-//         name: observation.taxon?.name,
-//         common_name: {
-//           id: observation.taxon?.common_name?.id,
-//           name: observation.taxon?.common_name?.name,
-//         }
-//       },
-//       photos: observation.photos.length > 0 ? observation.photos.map(photo => ({
-//         large_url: photo.large_url
-//       })) : []
-//     }));
-
-//     return res.json(birdData);
-
-//   } catch (error) {
-//     console.error('Error al obtener o guardar los datos:', error);
-//     return res.status(500).json({ message: 'Error al obtener los datos' });
-//   }
-// };
-
-
-
 async function getDescription(birdName){
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
@@ -69,36 +35,50 @@ async function getDescription(birdName){
 
   };
 
-  export async function createBirds(req, res){
+  async function obtainPhotoBird(name){
+    try {
+      const response = await axios.get(`https://api.catalogo.biodiversidad.co/record_search/search?q=${encodeURIComponent(name)}`);
+      const data = response.data.find(item => item.imageInfo?.mainImage);
+
+      if (data?.imageInfo?.mainImage) {
+        return data.imageInfo.mainImage;
+      }
+    } catch (biodiversityError) {
+      console.warn(`Error fetching biodiversity data for ${name}:`, biodiversityError.message);
+    }
+  }
+
+  export async function obtainBirds() {
 
     try {
+      await Bird.deleteMany({});
+  
       const response = await axios.get('https://www.inaturalist.org/observations.json?place_id=12738&taxon_id=3');
-  
-      const birds = response.data.map(async (observation) => {
 
+      const birds = await Promise.all(response.data.map(async (bird) => {
+
+        const url = await obtainPhotoBird(bird.taxon?.name) || (bird.photos.length > 0 ? bird.photos[0].medium_url : 'https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png');
+        
         const newBird = new Bird({
-          _id: observation.id, 
-          name: observation.taxon?.name, 
-          specie: observation.species_guess, 
-          url_photo: observation.photos.length > 0 ? observation.photos[0].large_url : 'foto no disponible', // Cambiado para incluir "foto no disponible"
-          ubication: observation.place_guess
+          _id: bird.id, 
+          name: bird.taxon?.name, 
+          specie: bird.species_guess || bird.taxon?.name, 
+          url_photo: url,
+          ubication: bird.place_guess
         });
-  
-        return newBird.save(); 
-      });
+
+        return newBird.save();
+      }));
   
       const savedBirds = await Promise.all(birds); 
   
-      return res.status(201).json({
-       message: "Birds created succesfully",
-       data: savedBirds 
-      }); 
+      console.log('Birds successfully updated');
   
     } catch (error) {
-      return res.status(500).json({ message: 'Error creating birds' }); 
+      console.error('Error getting birds:', error);
     }
-
   };
+  
 
   export async function getBirds(req, res){
 

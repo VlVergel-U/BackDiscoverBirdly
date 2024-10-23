@@ -4,11 +4,13 @@ import connectionbd from "./config/bd.config.js";
 import indexRouter from "./routes/index.routes.js";
 import { createDepartment } from "./controllers/department.controller.js";
 import ValidateRoutes from "./middlewares/index.middelware.js";
+import { obtainBirds } from "./controllers/bird.controller.js";
 
 async function main() {
     try {
         const server = express();
         await connectionbd();
+        await obtainBirds();
         await createDepartment();
         server.use(express.json());
         server.use(cors());
