@@ -7,6 +7,7 @@ import ValidateRoutes from "./middlewares/index.middelware.js";
 import { obtainBirds } from "./controllers/bird.controller.js";
 import { url_ngrok } from "./config/ngrok.config.js";
 import ngrok from "@ngrok/ngrok";
+import { createHostpots } from "./controllers/hostpot.controller.js";
 
 async function main() {
     try {
@@ -14,6 +15,7 @@ async function main() {
         await connectionbd();
         await obtainBirds();
         await createDepartment();
+        await createHostpots();
         server.use(express.json());
         server.use(cors());
         server.use(indexRouter);
