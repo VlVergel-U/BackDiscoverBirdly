@@ -2,8 +2,11 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const bird = new Schema({
-
   _id: {
+    type: String,
+    required: true
+  },
+  code: {
     type: String,
     required: true
   },
@@ -22,7 +25,12 @@ const bird = new Schema({
   ubication: { 
     type: String,
     required: true
+  },
+  description: { 
+    type: String,
+    required: true
   }
+  
 }, {
   timestamps: false,
   versionKey: false
