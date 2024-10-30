@@ -155,7 +155,13 @@ const genAI = new GoogleGenerativeAI(geminiKey);
 
       const birdsAPI = response.data.map(bird => bird._id);
           
-      const birdsDb = await Bird.find({ _id: { $in: birdsAPI } });
+      const birdsDb = await Bird.aggregate([
+        {
+          $match: {
+            _id: { $in: birdsAPI },
+          }
+        }
+      ]);
 
       if (birdsDb.length === 0) {
         return res.status(404).json({ message: 'No hay aves coincidentes en la base de datos' });

@@ -3,11 +3,9 @@ import Department from "../models/department.model.js";
 export async function createDepartment() {
   try {
 
-    const departmentExists = await Department.find({
-      "_id": { $in: [54, 68] }
-    });
+    const departmentExists = await Department.findOne({ "_id": 54 });
 
-    if (departmentExists.length === 2) {
+    if (departmentExists) {
       console.log('Data about departments and municipalities already in db');
       return;
     }
@@ -255,107 +253,7 @@ export async function createDepartment() {
       ],
     });
 
-
-    const department1 = new Department({
-      _id: 68,
-      name: "Santander",
-      lat: 7.125,
-      lon: -73.1198,
-      municipalities: [
-        {
-          _id: 68001,
-          name: "Bucaramanga",
-          lat: 7.119349,
-          lon: -73.122741,
-        },
-        {
-          _id: 68176,
-          name: "Floridablanca",
-          lat: 7.062222,
-          lon: -73.088611,
-        },
-        {
-          _id: 68081,
-          name: "Barrancabermeja",
-          lat: 7.06528,
-          lon: -73.85472,
-        },
-        {
-          _id: 68079,
-          name: "Barbosa",
-          lat: 5.930556,
-          lon: -73.616389,
-        },
-        {
-          _id: 68121,
-          name: "Cimitarra",
-          lat: 6.314444,
-          lon: -74.146944,
-        },
-        {
-          _id: 68190,
-          name: "Girón",
-          lat: 7.068056,
-          lon: -73.169444,
-        },
-        {
-          _id: 68245,
-          name: "Lebrija",
-          lat: 7.113333,
-          lon: -73.218056,
-        },
-        {
-          _id: 68264,
-          name: "Málaga",
-          lat: 6.704167,
-          lon: -72.733611,
-        },
-        {
-          _id: 68377,
-          name: "San Gil",
-          lat: 6.561667,
-          lon: -73.134444,
-        },
-        {
-          _id: 68397,
-          name: "Socorro",
-          lat: 6.464167,
-          lon: -73.2625,
-        },
-        {
-          _id: 68615,
-          name: "Piedecuesta",
-          lat: 6.9875,
-          lon: -73.050278,
-        },
-        {
-          _id: 68432,
-          name: "Sabana de Torres",
-          lat: 7.391111,
-          lon: -73.496389,
-        },
-        {
-          _id: 68276,
-          name: "Oiba",
-          lat: 6.263889,
-          lon: -73.298889,
-        },
-        {
-          _id: 68669,
-          name: "Vélez",
-          lat: 6.011944,
-          lon: -73.673611,
-        },
-        {
-          _id: 68720,
-          name: "Zapatoca",
-          lat: 6.814444,
-          lon: -73.271944,
-        },
-      ],
-    });
-
-    await Department.insertMany([department, department1]);
+    await department.save();
     console.log('Departamento creada con éxito:', department);
   } catch (error) {
     console.error('Error al crear el departamento:', error.message);
@@ -363,18 +261,11 @@ export async function createDepartment() {
 }
 
 
-export async function getDepartments(req, res) {
+export async function getDepartments(req, res){
+
   try {
-    const departments = await Department.find().select('name municipalities');
-
-    const result = departments.map(dept => ({
-      name: dept.name,
-      municipalities: dept.municipalities.map(mun => ({
-        name: mun.name
-      }))
-    }));
-
-    res.status(200).json(result);
+    const departments = await Department.find();
+    res.status(200).json(departments);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los departamentos', error });
   }
