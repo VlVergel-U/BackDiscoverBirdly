@@ -24,8 +24,8 @@ async function main() {
         server.listen(PORT, () => {
             console.log(`Server is running at http://localhost:${PORT}`);
         });
-    //     ngrok.connect({ addr: PORT, authtoken: url_Ngrok.token})
-	// .then(listener => console.log(`Ingress established at: ${listener.url()}`));
+       ngrok.connect({ addr: PORT, authtoken: url_ngrok.token})
+	.then(listener => console.log(`Ingress established at: ${listener.url()}`));
     } catch (error) {
         console.log("Unable to connect to the database", error);
     }
