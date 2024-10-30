@@ -178,3 +178,58 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     }
 
   };
+
+
+  //ESTO ES TEMPORAL
+  export async function getUbicationBird(req, res) {
+    try {
+      const birds = await Bird.find();
+  
+      if (birds.length === 0) {
+        return res.status(404).json({ message: 'No hay aves creadas' });
+      }
+  
+      const ubications = birds.map(bird => bird.ubication);
+      
+      const uniqueUbications = Array.from(new Set(ubications));
+      
+      if (!uniqueUbications.includes("Norte de Santander")) {
+        uniqueUbications.unshift("Norte de Santander");
+      }
+  
+      res.status(200).json({
+        success: true,
+        msg: "Aves obtenidas exitosamente",
+        data: uniqueUbications
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error getting birds', error: error.message }); 
+    }
+  }
+  
+
+  export async function getBirdsByUbication(req, res) {
+    try {
+      const { ubication } = req.params;
+  
+      if (!ubication) {
+        return res.status(400).json({ message: 'Ubicación no especificada' });
+      }
+  
+      const birds = await Bird.find({ ubication }); 
+  
+      if (birds.length === 0) {
+        return res.status(404).json({ message: 'No hay aves en esta ubicación' });
+      }
+  
+      res.status(200).json({
+        success: true,
+        msg: "Aves obtenidas exitosamente",
+        data: birds
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error getting birds', error: error.message }); 
+    }
+  }
+  
+
