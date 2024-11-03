@@ -144,7 +144,7 @@ const genAI = new GoogleGenerativeAI(geminiKey);
             url_photo: data.url,
             department: departmentModel._id,
             municipality: municipalityFind._id,
-            description: description || "No hay descripción",
+            description: description || "No hay descripción disponible",
           });
   
           return newBird.save();
@@ -190,41 +190,52 @@ const genAI = new GoogleGenerativeAI(geminiKey);
         msg: "Aves obtenidas exitosamente",
         data: birdsWithMunicipality
       });
+
     } catch (error) {
-      console.error(error); // Opcional: Log para depuración
+      console.error(error);
       return res.status(500).json({ message: 'Error obteniendo aves' });
     }
   };
   
 
-  export async function getBird(req, res){
-
-    try{
+  export async function getBird(req, res) {
+    try {
       const { searchValue } = req.params;
       const response = await axios.get(`https://api.catalogo.biodiversidad.co/record_search/search?q=${encodeURIComponent(searchValue)}`);
-
+      
       const birdsAPI = response.data.map(bird => bird._id);
-          
-      const birdsDb = await Bird.aggregate([
-        {
-          $match: {
-            _id: { $in: birdsAPI },
-          }
-        }
-      ]);
-
+      
+      const birdsDb = await Bird.find({ _id: { $in: birdsAPI } })
+        .populate('department')
+        .populate({ path: 'department', populate: { path: 'municipalities' } });
+  
       if (birdsDb.length === 0) {
         return res.status(404).json({ message: 'No hay aves coincidentes en la base de datos' });
       }
-
+  
+      const birdsWithMunicipality = birdsDb.map(bird => {
+        const municipality = bird.department.municipalities.find(m => m._id === bird.municipality);
+        return {
+          ...bird._doc,
+          department: {
+            _id: bird.department._id,
+            name: bird.department.name,
+            lon: bird.department.lon,
+            lat: bird.department.lat
+          },
+          municipality
+        };
+      });
+  
       res.status(200).json({
         success: true,
         msg: "Aves obtenidas exitosamente",
-        data: birdsDb
+        data: birdsWithMunicipality
       });
-
+  
     } catch (error) {
-      return res.status(500).json({ message: 'Error getting birds', error: error.message }); 
+      console.error(error);
+      return res.status(500).json({ message: 'Error obteniendo ave', error: error.message }); 
     }
-
   };
+  
