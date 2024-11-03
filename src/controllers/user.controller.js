@@ -41,7 +41,7 @@ export async function createUser (req, res) {
             secondName,
             firstlastName,
             secondlastName,
-            birth,
+            birth: new Date(birth),
             gender,
             department: departmentModel._id,
             municipality: municipalityFind._id,
@@ -52,6 +52,7 @@ export async function createUser (req, res) {
         });
 
         await User.collection.insertOne(user);
+        console.log("Resultado de inserción:", user);
         res.status(201).json(
             { 
             message: "User created",

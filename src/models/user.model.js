@@ -22,12 +22,6 @@ const user = new Schema({
     birth: { 
       type: Date, 
       required: true,
-      validate: {
-        validator: function(birth) {
-          return birth instanceof Date && birth.getTime() > 0;
-        },
-        message: 'Invalid birth date'
-      }
     },
     gender: { 
       type: String, 

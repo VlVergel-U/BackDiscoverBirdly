@@ -22,8 +22,13 @@ const bird = new Schema({
     type: String,
     required: true
   },
-  ubication: { 
-    type: String,
+  department: {
+    type: Number,
+    ref: 'Department',
+    required: true
+  },
+  municipality: {
+    type: Number,
     required: true
   },
   description: { 

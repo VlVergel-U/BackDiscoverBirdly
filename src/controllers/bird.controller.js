@@ -3,10 +3,12 @@ import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Bird from '../models/bird.model.js';
 import * as cheerio from 'cheerio';
+import Department from '../models/department.model.js';
 
 dotenv.config()
 const ebirdKey = process.env.token_ebird;
 const geminiKey = process.env.gemini_key;
+const googlemapsKey = process.env.api_google_maps;
 const genAI = new GoogleGenerativeAI(geminiKey);
 
 // async function getDescription(birdName){
@@ -37,21 +39,20 @@ const genAI = new GoogleGenerativeAI(geminiKey);
 
 //   };
 
-  // async function obtainDescriptionBird(){
-  //   try {
-  //     const response = await axios.get("https://ebird.org/species/lobsta1", {
-  //       maxRedirects: 0
-  //     });
-  //     const html = response.data;
-  //     const $ = cheerio.load(html);
-  
-  //     const info = $('.Species-identification-text p').text().trim();
-  
-  //     console.log(info);
-  //   } catch (error) {
-  //     console.error('Error fetching the page:', error);
-  //   }
-  // }
+  async function obtainDescriptionBird(name){
+    try {
+      const response = await axios.get(`https://api.catalogo.biodiversidad.co/record_search/advanced_search?scientificName=${encodeURIComponent(name)}`);
+      const data = response.data.find(item => item.fullDescriptionApprovedInUse?.fullDescription.fullDescriptionUnstructured);
+
+      if (data) {
+        const description = data.fullDescriptionApprovedInUse?.fullDescription.fullDescriptionUnstructured;
+        return description;
+      }
+    
+    } catch (error) {
+      console.warn(`Error fetching description data for ${name}:`, error.message);
+    }
+   }
 
 
   async function obtainPhotoBirdBio(name){
@@ -86,27 +87,64 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     }
   }
 
+  async function getCity(lat, lon) {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${googlemapsKey}`;
+  
+    try {
+      const response = await axios.get(url);
+      const results = response.data.results;
+  
+      if (results.length > 0) {
+        const addressComponents = results[0].address_components;
+        const cityComponent = addressComponents.find(component => 
+          component.types.includes('locality') || component.types.includes('administrative_area_level_2')
+        );
+  
+        return cityComponent ? cityComponent.long_name : null;
+      }
+  
+      return null;
+    } catch (error) {
+      console.error('Error getting city from coordinates:', error);
+      return null;
+    }
+  }
+  
   export async function obtainBirds() {
 
     try {
       await Bird.deleteMany({});
   
       const response = await axios.get(`https://api.ebird.org/v2/data/obs/CO-NSA/recent?key=${encodeURIComponent(ebirdKey)}`);
-      // const descripción = await obtainDescriptionBird()
-      // console.log(descripción)
+
       const birds = await Promise.all(response.data.map(async (bird) => {
 
         const data = await obtainPhotoBirdBio(bird.sciName)
         
         if (data) {
+
+          const city = await getCity(bird.lat, bird.lng); 
+          const description = await obtainDescriptionBird(bird.sciName);
+
+          const departmentModel = await Department.findOne({ 'name': "Norte de Santander" });
+          if (!departmentModel) {
+            throw new Error(`Department not found: Norte de Santander`);
+          } 
+      
+          const municipalityFind = departmentModel.municipalities.find(mun => mun.name.toLowerCase().trim() === city.toLowerCase().trim());
+          if (!municipalityFind) {
+            throw new Error(`Municipality not found: ${city} in department: "Norte de Santander"`);
+          }
+
           const newBird = new Bird({
             _id: data.id,
             code: bird.speciesCode,
             name: data.name,
             specie: bird.sciName,
             url_photo: data.url,
-            ubication: bird.locName,
-            description: "hola",
+            department: departmentModel._id,
+            municipality: municipalityFind._id,
+            description: description || "No hay descripción",
           });
   
           return newBird.save();
@@ -123,29 +161,41 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   };
   
 
-  export async function getBirds(req, res){
-
-    try{
-
+  export async function getBirds(req, res) {
+    try {
       const birds = await Bird.find()
-
+        .populate('department')
+        .populate({ path: 'department', populate: { path: 'municipalities' } });
+  
       if (birds.length === 0) {
         return res.status(404).json({ message: 'No hay aves creadas' });
       }
   
+      const birdsWithMunicipality = birds.map(bird => {
+        const municipality = bird.department.municipalities.find(m => m._id === bird.municipality);
+        return {
+          ...bird._doc,
+          department: {
+            _id: bird.department._id,
+            name: bird.department.name,
+            lon: bird.department.lon,
+            lat: bird.department.lat
+          },
+          municipality
+        };
+      });
+  
       res.status(200).json({
         success: true,
         msg: "Aves obtenidas exitosamente",
-        data: birds
+        data: birdsWithMunicipality
       });
-  
-
-    }catch{
-      throw res.status(500).json({ message: 'Error getting birds' }); 
+    } catch (error) {
+      console.error(error); // Opcional: Log para depuración
+      return res.status(500).json({ message: 'Error obteniendo aves' });
     }
-
   };
-
+  
 
   export async function getBird(req, res){
 
@@ -178,58 +228,3 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     }
 
   };
-
-
-  //ESTO ES TEMPORAL
-  export async function getUbicationBird(req, res) {
-    try {
-      const birds = await Bird.find();
-  
-      if (birds.length === 0) {
-        return res.status(404).json({ message: 'No hay aves creadas' });
-      }
-  
-      const ubications = birds.map(bird => bird.ubication);
-      
-      const uniqueUbications = Array.from(new Set(ubications));
-      
-      if (!uniqueUbications.includes("Norte de Santander")) {
-        uniqueUbications.unshift("Norte de Santander");
-      }
-  
-      res.status(200).json({
-        success: true,
-        msg: "Aves obtenidas exitosamente",
-        data: uniqueUbications
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'Error getting birds', error: error.message }); 
-    }
-  }
-  
-
-  export async function getBirdsByUbication(req, res) {
-    try {
-      const { ubication } = req.params;
-  
-      if (!ubication) {
-        return res.status(400).json({ message: 'Ubicación no especificada' });
-      }
-  
-      const birds = await Bird.find({ ubication }); 
-  
-      if (birds.length === 0) {
-        return res.status(404).json({ message: 'No hay aves en esta ubicación' });
-      }
-  
-      res.status(200).json({
-        success: true,
-        msg: "Aves obtenidas exitosamente",
-        data: birds
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'Error getting birds', error: error.message }); 
-    }
-  }
-  
-

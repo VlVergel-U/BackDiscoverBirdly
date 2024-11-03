@@ -173,6 +173,12 @@ export async function createDepartment() {
           lon: -72.5833333,
         },
         {
+          "_id": 54874,
+          "name": "Villa del Rosario",
+          "lat": 7.834,
+          "lon": -72.474167
+        },
+        {
           _id: 54553,
           name: "Puerto Santander",
           lat: 8.3636111,
