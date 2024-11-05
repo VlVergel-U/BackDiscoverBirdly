@@ -126,7 +126,7 @@ export async function createDepartment() {
         },
         {
           _id: 54398,
-          name: "La Playa",
+          name: "La Playa de Belén",
           lat: 8.25,
           lon: -73.1666667,
         },

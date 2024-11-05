@@ -27,10 +27,14 @@ const bird = new Schema({
     ref: 'Department',
     required: true
   },
-  municipality: {
-    type: Number,
-    required: true
-  },
+  municipality: [{
+    name: { type: String, required: true },
+    places: [{
+      name: { type: String, required: false },
+      lat: { type: Number, required: true },
+      lon: { type: Number, required: true }
+    }]
+  }],
   description: { 
     type: String,
     required: true

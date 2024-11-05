@@ -17,7 +17,8 @@ const municipality = new Schema({
   lon: {
     type: Number,
     required: true,
-  },
+  }
+
 }, { _id: false });
 
 const department = new Schema({

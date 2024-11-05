@@ -87,6 +87,73 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     }
   }
 
+  async function birdsJardinBotanico() {
+    const data = {
+      birds: [
+        "Rupornis magnirostris",
+        "Elanus leucurus",
+        "Coragyps atratus",
+        "Amazilia tzacatl",
+        "Anthracothorax nigricollis",
+        "Chordeiles acutipennis",
+        "Vanellus chilensis",
+        "Columbina talpacoti",
+        "Zenaida auriculata",
+        "Chloroceryle americana",
+        "Crotophaga ani",
+        "Piaya cayana",
+        "Falco sparverius",
+        "Milvago chimachima",
+        "Piranga rubra",
+        "Cyanocorax yncas",
+        "Euphonia laniirostris",
+        "Spinus xantogastrus",
+        "Pygochelidon cyanoleuca",
+        "Quiscalus lugubris",
+        "Icterus nigrogularis",
+        "Sturnella magna",
+        "Mimus gilvus",
+        "Setophaga petechia",
+        "Mniotilta varia",
+        "Parkesia noveboracensis",
+        "Ramphocelus dimidiatus",
+        "Saltator striatipectus",
+        "Sicalis flaveola",
+        "Sporophila nigricollis",
+        "Stilpnia cayana",
+        "Stilpnia cyanicollis",
+        "Stilpnia cyanoptera",
+        "Thraupis episcopus",
+        "Sporophila crassirostris",
+        "Schistochlamys melanopis",
+        "Thraupis palmarum",
+        "Cyanerpes cyaneus",
+        "Saltator coerulescens",
+        "Campylorhynchus griseus",
+        "Turdus nudigenis",
+        "Turdus flavipes",
+        "Myiozetetes cayanensis",
+        "Pyrocephalus rubinus",
+        "Tyrannus melancholicus",
+        "Myiodynastes maculatus",
+        "Machetornis rixosa",
+        "Elaenia flavogaster",
+        "Pitangus sulphuratus",
+        "Butorides striata",
+        "Nycticorax nycticorax",
+        "Melanerpes rubricapillus",
+        "Picumnus olivaceus"
+      ],
+      coordenadas: {
+        lat: 8.238487747456373,
+        lon: -73.31935972679538
+      }
+    };
+  
+    return data;
+  }
+  
+
   async function getCity(lat, lon) {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${googlemapsKey}`;
   
@@ -111,31 +178,60 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   }
   
   export async function obtainBirds() {
-
     try {
       await Bird.deleteMany({});
   
       const response = await axios.get(`https://api.ebird.org/v2/data/obs/CO-NSA/recent?key=${encodeURIComponent(ebirdKey)}`);
-
+  
+      const jardinData = await birdsJardinBotanico();
+  
       const birds = await Promise.all(response.data.map(async (bird) => {
-
-        const data = await obtainPhotoBirdBio(bird.sciName)
-        
+  
+        const data = await obtainPhotoBirdBio(bird.sciName);
+  
         if (data) {
-
           const city = await getCity(bird.lat, bird.lng); 
           const description = await obtainDescriptionBird(bird.sciName);
-
+  
           const departmentModel = await Department.findOne({ 'name': "Norte de Santander" });
           if (!departmentModel) {
             throw new Error(`Department not found: Norte de Santander`);
-          } 
-      
-          const municipalityFind = departmentModel.municipalities.find(mun => mun.name.toLowerCase().trim() === city.toLowerCase().trim());
-          if (!municipalityFind) {
+          }
+  
+          const municipalityModel = departmentModel.municipalities.find(mun => mun.name.toLowerCase().trim() === city.toLowerCase().trim());
+          if (!municipalityModel) {
             throw new Error(`Municipality not found: ${city} in department: "Norte de Santander"`);
           }
-
+  
+          const municipalities = [
+            {
+              name: municipalityModel.name,
+              places: [{
+                lat: bird.lat,
+                lon: bird.lng
+              }]
+            }
+          ];
+  
+          if (jardinData.birds.includes(bird.sciName)) {
+            if (municipalityModel.name.toLowerCase() === "ocaña") {
+              municipalities[0].places.push({
+                name: "Jardín Botánico UFPSO",
+                lat: jardinData.coordenadas.lat,
+                lon: jardinData.coordenadas.lon
+              });
+            } else {
+              municipalities.push({
+                name: "Ocaña",
+                places: [{
+                  name: "Jardín Botánico UFPSO",
+                  lat: jardinData.coordenadas.lat,
+                  lon: jardinData.coordenadas.lon
+                }]
+              });
+            }
+          }
+  
           const newBird = new Bird({
             _id: data.id,
             code: bird.speciesCode,
@@ -143,7 +239,7 @@ const genAI = new GoogleGenerativeAI(geminiKey);
             specie: bird.sciName,
             url_photo: data.url,
             department: departmentModel._id,
-            municipality: municipalityFind._id,
+            municipality: municipalities,
             description: description || "No hay descripción disponible",
           });
   
@@ -158,9 +254,8 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     } catch (error) {
       console.error('Error getting birds:', error);
     }
-  };
+  }
   
-
   export async function getBirds(req, res) {
     try {
       const birds = await Bird.find()
@@ -172,7 +267,21 @@ const genAI = new GoogleGenerativeAI(geminiKey);
       }
   
       const birdsWithMunicipality = birds.map(bird => {
-        const municipality = bird.department.municipalities.find(m => m._id === bird.municipality);
+        const municipality = bird.municipality.map(mun => {
+          const departmentMunicipality = bird.department.municipalities.find(m => m.name === mun.name);
+          
+          if (!departmentMunicipality) return null;
+  
+          return {
+            name: departmentMunicipality.name,
+            places: mun.places.map(place => ({
+              name: place.name,
+              lat: place.lat,
+              lon: place.lon
+            }))
+          };
+        }).filter(mun => mun !== null);
+  
         return {
           ...bird._doc,
           department: {
@@ -190,12 +299,14 @@ const genAI = new GoogleGenerativeAI(geminiKey);
         msg: "Aves obtenidas exitosamente",
         data: birdsWithMunicipality
       });
-
+  
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Error obteniendo aves' });
     }
-  };
+  }
+  
+  
   
 
   export async function getBird(req, res) {
@@ -214,7 +325,21 @@ const genAI = new GoogleGenerativeAI(geminiKey);
       }
   
       const birdsWithMunicipality = birdsDb.map(bird => {
-        const municipality = bird.department.municipalities.find(m => m._id === bird.municipality);
+        const municipality = bird.municipality.map(mun => {
+          const departmentMunicipality = bird.department.municipalities.find(m => m.name === mun.name);
+  
+          if (!departmentMunicipality) return null;
+  
+          return {
+            name: departmentMunicipality.name,
+            places: mun.places.map(place => ({
+              name: place.name,
+              lat: place.lat,
+              lon: place.lon
+            }))
+          };
+        }).filter(mun => mun !== null);
+  
         return {
           ...bird._doc,
           department: {
@@ -229,13 +354,14 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   
       res.status(200).json({
         success: true,
-        msg: "Aves obtenidas exitosamente",
+        msg: "Ave obtenida exitosamente",
         data: birdsWithMunicipality
       });
   
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: 'Error obteniendo ave', error: error.message }); 
+      return res.status(500).json({ message: 'Error obteniendo ave', error: error.message });
     }
   };
+  
   
