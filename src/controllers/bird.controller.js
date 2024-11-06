@@ -259,6 +259,7 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   export async function getBirds(req, res) {
     try {
       const birds = await Bird.find()
+       .sort({ name: 1 })
         .populate('department')
         .populate({ path: 'department', populate: { path: 'municipalities' } });
   
@@ -304,7 +305,7 @@ const genAI = new GoogleGenerativeAI(geminiKey);
       console.error(error);
       return res.status(500).json({ message: 'Error obteniendo aves' });
     }
-  }
+  };
   
   
   
@@ -363,5 +364,39 @@ const genAI = new GoogleGenerativeAI(geminiKey);
       return res.status(500).json({ message: 'Error obteniendo ave', error: error.message });
     }
   };
+
+
+  export async function getBirdCountByMunicipality(req, res) {
+    try {
+        const result = await Bird.aggregate([
+            { $unwind: "$municipality" }, 
+            {
+                $group: {
+                    _id: "$municipality.name",
+                    birdCount: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    municipality: "$_id",
+                    birdCount: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener el conteo de aves por municipio",
+            error: error.message
+        });
+    }
+}
+
   
   

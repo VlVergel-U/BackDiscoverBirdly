@@ -97,40 +97,61 @@ export async function getAllUsers(req, res) {
   }
 
   export async function getUser(req, res) {
-    
-    const {username} = req.params
+    const { username } = req.params;
 
-    const validateCreated = await User.find();
-
-    if(validateCreated.length === 0){
+    const validateCreated = await User.countDocuments();
+    if (validateCreated === 0) {
         return res.status(404).json({ message: 'No hay usuarios creados' });
     }
 
-    const user = await User.findOne({ username })
-      .populate('department')
-      .populate({ path: 'department', populate: { path: 'municipalities' } });
-    
-    if(!user){
+    const user = await User.aggregate([
+        { $match: { username } },
+        {
+            $lookup: {
+                from: 'departments',
+                localField: 'department',
+                foreignField: '_id',
+                as: 'department',
+            },
+        },
+        { $unwind: "$department" },
+        {
+            $project: {
+                _id: 0,
+                firstName: 1,
+                secondName: 1,
+                firstlastName: 1,
+                secondlastName: 1,
+                birth: 1,
+                gender: 1,
+                occupation: 1,
+                username: 1,
+                email: 1,
+                department: {
+                    name: 1,
+                    municipalities: {
+                        $filter: {
+                            input: "$department.municipalities",
+                            as: "municipality",
+                            cond: { $eq: ["$$municipality._id", "$municipality"] }
+                        }
+                    }
+                },
+            },
+        },
+    ]);
+
+    if (!user || user.length === 0) {
         return res.status(404).json({ message: 'Usuario no encontrado' });
     }
-
-    const municipality = user.department.municipalities.find(m => m._id === user.municipality);
 
     res.status(200).json({
         success: true,
         msg: "Usuario obtenido exitosamente",
-        data: {
-          ...user._doc,
-          department: {
-            _id: user.department._id,
-            name: user.department.name,
-            lon: user.department.lon,
-            lat: user.department.lat
-          },
-          municipality
-        }
-    })
+        data: user[0]
+    });
 }
+
 
 export async function updateUser(req, res) {
     const { username } = req.params;

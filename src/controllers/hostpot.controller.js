@@ -33,15 +33,33 @@ export async function createHostpots() {
 }
 
 export async function getHostpots(req, res) {
+
+  const limit = parseInt(req.query.limit) || 0;
+  const page = parseInt(req.query.page) || 0;
+  const skip = (page - 1) * limit;
+
   try {
-    const hostpots = await Hostpot.find();
+    const totalHostpots = await Hostpot.countDocuments();
+    const totalPages = Math.ceil(totalHostpots / limit);
 
-    const result = hostpots.map(host => ({
-      name: host.location,
-    }));
+    const hostpots = await Hostpot.find()
+      .sort({ location: 1 }) 
+      .limit(parseInt(limit))
+      .skip(parseInt(skip));
 
-    res.status(200).json(result);
+    res.status(200).json({
+      success: true,
+      msg: "Hostpots obtenidos exitosamente",
+      data: hostpots,
+      pagination: {
+        total: totalHostpots,
+        limit: parseInt(limit),
+        page: parseInt(page),
+        totalPages
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los hostpots', error });
   }
-};
+}
+
