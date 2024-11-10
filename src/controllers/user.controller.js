@@ -208,25 +208,6 @@ export async function deleteUser(req, res){
     
 }
 
-export async function userNoActive(req, res) {
-  try {
-      const result = await User.updateMany(
-          { isActive: true }, 
-          { $set: { isActive: false } }
-      );
-
-      if (result.matchedCount === 0) {
-          return res.status(404).json({ message: 'No se encontraron usuarios activos para desactivar.' });
-      }
-
-      res.status(200).json({ message: `Se desactivaron ${result.modifiedCount} usuarios.` });
-  } catch (error) {
-      console.error("Error al desactivar usuarios:", error);
-      res.status(500).json({ message: 'Error interno del servidor.' });
-  }
-}
-
-
 
 export async function changeUsername(req, res) {
 

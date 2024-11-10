@@ -259,13 +259,30 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   export async function getBirds(req, res) {
     try {
       const birds = await Bird.find()
-       .sort({ name: 1 })
+        .sort({ name: 1 })
         .populate('department')
         .populate({ path: 'department', populate: { path: 'municipalities' } });
-  
+      
       if (birds.length === 0) {
         return res.status(404).json({ message: 'No hay aves creadas' });
       }
+  
+      const birdCountByMunicipality = await Bird.aggregate([
+        { $unwind: "$municipality" },
+        { 
+          $group: {
+            _id: "$municipality.name",
+            birdCount: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            municipality: "$_id",
+            birdCount: 1,
+            _id: 0
+          }
+        }
+      ]);
   
       const birdsWithMunicipality = birds.map(bird => {
         const municipality = bird.municipality.map(mun => {
@@ -273,8 +290,11 @@ const genAI = new GoogleGenerativeAI(geminiKey);
           
           if (!departmentMunicipality) return null;
   
+          const birdCount = birdCountByMunicipality.find(count => count.municipality === mun.name)?.birdCount || 0;
+  
           return {
             name: departmentMunicipality.name,
+            birdCount: birdCount,
             places: mun.places.map(place => ({
               name: place.name,
               lat: place.lat,
@@ -286,7 +306,6 @@ const genAI = new GoogleGenerativeAI(geminiKey);
         return {
           ...bird._doc,
           department: {
-            _id: bird.department._id,
             name: bird.department.name,
             lon: bird.department.lon,
             lat: bird.department.lat
@@ -368,13 +387,26 @@ const genAI = new GoogleGenerativeAI(geminiKey);
 
   export async function getBirdCountByMunicipality(req, res) {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const pageSize = 5;
+        const skip = (page - 1) * pageSize;
+
         const result = await Bird.aggregate([
-            { $unwind: "$municipality" }, 
+            { $unwind: "$municipality" },
             {
                 $group: {
                     _id: "$municipality.name",
                     birdCount: { $sum: 1 }
                 }
+            },
+            {
+                $sort: { birdCount: -1 }
+            },
+            {
+                $skip: skip
+            },
+            {
+                $limit: pageSize
             },
             {
                 $project: {
@@ -397,6 +429,8 @@ const genAI = new GoogleGenerativeAI(geminiKey);
         });
     }
 }
+
+
 
   
   
