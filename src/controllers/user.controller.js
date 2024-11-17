@@ -2,6 +2,7 @@ import User from '../models/user.model.js';
 import bcrypt from 'bcrypt';
 import Department from '../models/department.model.js';
 import { generateHash } from '../utils/credentials.util.js'
+import Bird from '../models/bird.model.js';
 
 export async function createUser (req, res) {
     
@@ -234,3 +235,88 @@ export async function changeUsername(req, res) {
       res.status(500).json({ message: 'Error interno del servidor' });
   }
 }
+
+export async function addFavorite(req, res) {
+    const { username } = req.params;
+    const { codeBird } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        if (user.favorites.includes(codeBird)) {
+            return res.status(400).json({ message: 'El ave ya está en tus favoritos' });
+        }
+
+        user.favorites.push(codeBird);
+
+        await User.updateOne({ username }, { $set: { favorites: user.favorites } });
+
+        res.status(200).json({ message: 'Favorito agregado exitosamente' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+}
+
+
+
+
+export async function removeFavorite(req, res) {
+    const { username } = req.params;  
+    const { codeBird } = req.body;   
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        if (!user.favorites.includes(codeBird)) {
+            return res.status(400).json({ message: 'El ave no está en tus favoritos' });
+        }
+
+        user.favorites.pull(codeBird);
+
+        await User.updateOne({ username }, { $set: { favorites: user.favorites } });
+
+        res.status(200).json({ message: 'Favorito eliminado exitosamente' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+}
+
+
+
+export async function getFavorites(req, res) {
+    const { username } = req.params;
+    console.log("Username recibido:", username); 
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+    
+        const birdCodes = user.favorites;
+
+    const birds = await Bird.find({
+      'code': { $in: birdCodes }
+    });
+
+    if (birds.length === 0) {
+      return res.status(404).json({ message: 'No favorite birds found' });
+    }
+
+    res.status(200).json({ birds });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error retrieving favorite birds' });
+  }
+}
+
+

@@ -75,7 +75,6 @@ const user = new Schema({
         message: 'Invalid password. Password should be at least 8 characters long and contain only letters and numbers.'
       }
     }, 
-    //ESTO ES PARA GUARDAR LOS FAVORITOS DE LA GENTE BOBA
     favorites: [{
         type: String,
         required: false,

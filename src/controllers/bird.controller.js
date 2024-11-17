@@ -55,32 +55,35 @@ const genAI = new GoogleGenerativeAI(geminiKey);
    }
 
 
-  async function obtainPhotoBirdBio(name){
+   async function obtainPhotoBirdBio(name) {
     try {
       const response = await axios.get(`https://api.catalogo.biodiversidad.co/record_search/search?q=${encodeURIComponent(name)}`);
       const data = response.data.find(item => item.imageInfo?.mainImage);
-
+  
       if (data) {
         const url = data.imageInfo.mainImage;
-        const name = data.commonNames && data.commonNames.length > 0 ? data.commonNames[0].name : null;
+        const commonName = data.commonNames && data.commonNames.length > 0 ? data.commonNames[0].name : null;
         const id = data._id;
-        return { url, name, id };
+        return { url, name: commonName, id };
       }
-    
+      
     } catch (error) {
-      console.warn(`Error fetching biodiversity data for ${name}:`, error.message);
-        await obtainPhotoBirdInaturalist(name);
-
+      // console.warn(`Error fetching biodiversity data for ${name}:`, error.message);
+      
+      const inaturalistResult = await obtainPhotoBirdInaturalist(name);
+      if (inaturalistResult) {
+        return { url: inaturalistResult, name: null, id: null };
     }
   }
+}
 
-  async function obtainPhotoBirdInaturalist(name){
+  async function obtainPhotoBirdInaturalist(name) {
     try {
       const response = await axios.get(`https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(name)}`);
       const results = response.data.results;
-      const data = results.find(item => item.taxon.default_photo.url);
-      if (data?.taxon.default_photo.url) {
-        return data.taxon.default_photo.url;
+      const data = results.find(item => item.taxon.default_photo.square_url);
+      if (data?.taxon.default_photo.square_url) {
+        return data.taxon.default_photo.square_url;
       }
     } catch (error) {
       console.warn(`Error fetching inaturalist data for ${name}:`, error.message);
@@ -163,8 +166,11 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   
       if (results.length > 0) {
         const addressComponents = results[0].address_components;
-        const cityComponent = addressComponents.find(component => 
-          component.types.includes('locality') || component.types.includes('administrative_area_level_2')
+  
+        const cityComponent = addressComponents.find(component =>
+          component.types.includes('locality') ||
+          component.types.includes('administrative_area_level_2') ||
+          component.types.includes('political')
         );
   
         return cityComponent ? cityComponent.long_name : null;
@@ -176,6 +182,8 @@ const genAI = new GoogleGenerativeAI(geminiKey);
       return null;
     }
   }
+  
+  
   
   export async function obtainBirds() {
     try {
@@ -191,6 +199,10 @@ const genAI = new GoogleGenerativeAI(geminiKey);
   
         if (data) {
           const city = await getCity(bird.lat, bird.lng); 
+          if (!city) {
+            console.warn(`No se pudo obtener la ciudad para las coordenadas: Lat: ${bird.lat}, Lon: ${bird.lng} name ${bird.sciName}.`);
+            return null; 
+          }
           const description = await obtainDescriptionBird(bird.sciName);
   
           const departmentModel = await Department.findOne({ 'name': "Norte de Santander" });
@@ -233,9 +245,9 @@ const genAI = new GoogleGenerativeAI(geminiKey);
           }
   
           const newBird = new Bird({
-            _id: data.id,
+            _id: data.id || bird.subId,
             code: bird.speciesCode,
-            name: data.name,
+            name: data.name || bird.comName,
             specie: bird.sciName,
             url_photo: data.url,
             department: departmentModel._id,
@@ -430,6 +442,11 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     }
 }
 
+
+export async function routeDescription(req, res){
+
+  
+}
 
 
   
