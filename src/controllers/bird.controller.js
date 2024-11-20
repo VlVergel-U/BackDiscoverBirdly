@@ -445,7 +445,7 @@ export async function analyzeAudio(req, res) {
         return res.status(400).json({ error: 'Fecha no válida.' });
       }
 
-      const filePath = path.resolve(__dirname, 'uploads', req.file.filename);
+      const filePath = path.resolve(__dirname, '../../uploads', req.file.filename);
       console.log(`Archivo guardado en: ${filePath}`);
 
       const scriptPath = path.resolve(__dirname, '../config/python/detectBird.py');
@@ -456,7 +456,9 @@ export async function analyzeAudio(req, res) {
           console.error(`Error ejecutando el script: ${error.message}`);
           return res.status(500).json({ error: 'Error al analizar el audio' });
         }
-
+      
+        console.log("Salida del script Python:", stdout); // Agregar este log para verificar la salida
+      
         try {
           const detections = JSON.parse(stdout);
           return res.status(200).json({ detections });

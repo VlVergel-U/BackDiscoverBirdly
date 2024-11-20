@@ -30,5 +30,8 @@ recording = Recording(
 
 recording.analyze()
 
-print(recording.detections)
-print(json.dumps(recording.detections))
+if recording.detections:
+    print(json.dumps(recording.detections))
+else:
+    print(json.dumps({"error": "No detecciones encontradas"}))
+
