@@ -460,7 +460,7 @@ export async function analyzeAudio(req, res) {
             console.log('Archivo eliminado:', filePath);
           }
         });
-        
+
         if (error) {
           console.error(`Error ejecutando el script: ${error.message}`);
           return res.status(500).json({ error: 'Error al analizar el audio' });
@@ -479,7 +479,15 @@ export async function analyzeAudio(req, res) {
           return res.status(500).json({ error: 'Error procesando las detecciones', message: stdout });
         }
 
-        return res.status(200).json({ detections });
+        if (detections && detections.length > 0) {
+          const simplifiedDetections = detections.map(detection => ({
+            common_name: detection.common_name,
+            scientific_name: detection.scientific_name
+          }));
+          return res.status(200).json({ detections: simplifiedDetections });
+        } else {
+          return res.status(404).json({ detections: { error: 'No detecciones encontradas' } });
+        }
       });
     });
   } catch (err) {
