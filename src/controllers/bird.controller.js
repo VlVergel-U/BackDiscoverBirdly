@@ -456,24 +456,19 @@ export async function analyzeAudio(req, res) {
           console.error(`Error ejecutando el script: ${error.message}`);
           return res.status(500).json({ error: 'Error al analizar el audio' });
         }
-      
-        console.log("Salida del script Python:", stdout); // Agregar este log para verificar la salida
-      
+
+        console.log("Salida del script Python:", stdout);
+
+        // Intentamos detectar si la salida es un JSON
+        let detections;
         try {
-          const detections = JSON.parse(stdout);
-          return res.status(200).json({ detections });
+          detections = JSON.parse(stdout); // Intentamos parsear la salida como JSON
         } catch (err) {
-          console.error('Error al procesar la respuesta del script:', err);
-          return res.status(500).json({ error: 'Error procesando las detecciones' });
-        } finally {
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.error('Error al borrar el archivo:', err);
-            } else {
-              console.log('Archivo eliminado');
-            }
-          });
+          // Si no es un JSON válido, respondemos con el mensaje de error completo de Python
+          return res.status(500).json({ error: 'Error procesando las detecciones', message: stdout });
         }
+
+        return res.status(200).json({ detections });
       });
     });
   } catch (err) {
