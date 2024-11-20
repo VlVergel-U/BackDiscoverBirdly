@@ -3,6 +3,8 @@ from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
 from datetime import datetime
 import os
+import json
+
 
 lat = float(sys.argv[1])
 lon = float(sys.argv[2])
@@ -29,3 +31,4 @@ recording = Recording(
 recording.analyze()
 
 print(recording.detections)
+print(json.dumps(recording.detections))

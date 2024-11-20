@@ -2,57 +2,17 @@ import axios from 'axios';
 import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Bird from '../models/bird.model.js';
-import * as cheerio from 'cheerio';
 import Department from '../models/department.model.js';
 import { exec } from 'child_process';
+import upload from '../middlewares/upload.middelware.js';
+import fs from 'fs';
 import path from 'path';
-import multer from 'multer';
-
+import { fileURLToPath } from 'url';
 
 dotenv.config()
 const ebirdKey = process.env.token_ebird;
 const geminiKey = process.env.gemini_key;
 const googlemapsKey = process.env.api_google_maps;
-const genAI = new GoogleGenerativeAI(geminiKey);
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  }
-});
-
-const upload = multer({ storage });
-
-// async function getDescription(birdName){
-
-//   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
-//   const chat = model.startChat({
-//     history: [
-//       {
-//         role: "user",
-//         parts: [{ text: "Hola necesito que te vuelvas experto en aves." }],
-//       },
-//       {
-//         role: "model",
-//         parts: [{ text: "Qué quieres saber?" }],
-//       },
-//     ],
-//     generationConfig: {
-//       maxOutputTokens: 100,
-//     },
-//   });
-
-//   const msg = `Dame una descripción clara y concisa de la especie ${birdName}, incluyendo si es endémica, su alimentación, en qué ecosistema vive, y una descripción general. No preguntes nada más, solo responde esos datos en un parrafo`;
-
-//   const result = await chat.sendMessage(msg);
-//   const response = await result.response;
-//   const text = response.text();
-//   return text;
-
-//   };
 
   async function obtainDescriptionBird(name){
     try {
@@ -457,6 +417,8 @@ const upload = multer({ storage });
     }
 }
 
+const __dirname = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
+
 export async function analyzeAudio(req, res) {
   try {
     upload.single('file')(req, res, async (err) => {
@@ -468,32 +430,46 @@ export async function analyzeAudio(req, res) {
         return res.status(400).json({ error: 'No se ha subido ningún archivo' });
       }
 
-      const { lat, lon, date } = req.body;
-      const file_path = path.join(__dirname, req.file.path);
-      console.log(`Archivo guardado en: ${file_path}`);
+      const validAudioTypes = ['audio/mp3', 'audio/wav', 'audio/mpeg', 'audio/ogg'];
+      if (!validAudioTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: 'Tipo de archivo no válido. Solo se permiten archivos de audio.' });
+      }
 
-      exec(`python3 ../config/python/detectBird.py ${lat} ${lon} ${date} ${file_path}`, (error, stdout, stderr) => {
+      const { lat, lon, date } = req.body;
+
+      if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        return res.status(400).json({ error: 'Latitud o longitud no válidas.' });
+      }
+
+      if (isNaN(Date.parse(date))) {
+        return res.status(400).json({ error: 'Fecha no válida.' });
+      }
+
+      const filePath = path.resolve(__dirname, 'uploads', req.file.filename);
+      console.log(`Archivo guardado en: ${filePath}`);
+
+      const scriptPath = path.resolve(__dirname, '../config/python/detectBird.py');
+      console.log(`Script a ejecutar: ${scriptPath}`);
+
+      exec(`python "${scriptPath}" ${lat} ${lon} ${date} "${filePath}"`, (error, stdout, stderr) => {
         if (error) {
-          console.error(`Error ejecutando el script: ${error}`);
-          if (!res.headersSent) {
-            return res.status(500).json({ error: 'Error al analizar el audio' });
-          }
+          console.error(`Error ejecutando el script: ${error.message}`);
+          return res.status(500).json({ error: 'Error al analizar el audio' });
         }
 
         try {
           const detections = JSON.parse(stdout);
-          if (!res.headersSent) {
-            return res.status(200).json({ detections });
-          }
+          return res.status(200).json({ detections });
         } catch (err) {
           console.error('Error al procesar la respuesta del script:', err);
-          if (!res.headersSent) {
-            return res.status(500).json({ error: 'Error procesando las detecciones' });
-          }
+          return res.status(500).json({ error: 'Error procesando las detecciones' });
         } finally {
-          fs.unlink(file_path, (err) => {
-            if (err) console.error('Error al borrar el archivo:', err);
-            else console.log('Archivo eliminado');
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.error('Error al borrar el archivo:', err);
+            } else {
+              console.log('Archivo eliminado');
+            }
           });
         }
       });
