@@ -5,12 +5,26 @@ import Bird from '../models/bird.model.js';
 import * as cheerio from 'cheerio';
 import Department from '../models/department.model.js';
 import { exec } from 'child_process';
+import path from 'path';
+import multer from 'multer';
+
 
 dotenv.config()
 const ebirdKey = process.env.token_ebird;
 const geminiKey = process.env.gemini_key;
 const googlemapsKey = process.env.api_google_maps;
 const genAI = new GoogleGenerativeAI(geminiKey);
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+});
+
+const upload = multer({ storage });
 
 // async function getDescription(birdName){
 
@@ -443,39 +457,54 @@ const genAI = new GoogleGenerativeAI(geminiKey);
     }
 }
 
-
 export async function analyzeAudio(req, res) {
-    
   try {
-    const { lat, lon, date } = req.body;
-
-    const file_path = path.join(__dirname, req.file.path);
-    console.log(`Archivo guardado en: ${file_path}`);
-
-    exec(`python3 /path/to/your/script.py ${lat} ${lon} ${date} ${file_path}`, async (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error ejecutando el script: ${error}`);
-        return res.status(500).json({ error: 'Error al analizar el audio' });
+    upload.single('file')(req, res, async (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al subir el archivo' });
       }
 
-      try {
-        const detections = JSON.parse(stdout);
-        return res.status(200).json({ detections });
-      } catch (err) {
-        console.error('Error al procesar la respuesta del script:', err);
-        return res.status(500).json({ error: 'Error procesando las detecciones' });
-      } finally {
-        fs.unlink(file_path, (err) => {
-          if (err) console.error('Error al borrar el archivo:', err);
-          else console.log('Archivo eliminado');
-        });
+      if (!req.file) {
+        return res.status(400).json({ error: 'No se ha subido ningún archivo' });
       }
+
+      const { lat, lon, date } = req.body;
+      const file_path = path.join(__dirname, req.file.path);
+      console.log(`Archivo guardado en: ${file_path}`);
+
+      exec(`python3 ../config/python/detectBird.py ${lat} ${lon} ${date} ${file_path}`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error ejecutando el script: ${error}`);
+          if (!res.headersSent) {
+            return res.status(500).json({ error: 'Error al analizar el audio' });
+          }
+        }
+
+        try {
+          const detections = JSON.parse(stdout);
+          if (!res.headersSent) {
+            return res.status(200).json({ detections });
+          }
+        } catch (err) {
+          console.error('Error al procesar la respuesta del script:', err);
+          if (!res.headersSent) {
+            return res.status(500).json({ error: 'Error procesando las detecciones' });
+          }
+        } finally {
+          fs.unlink(file_path, (err) => {
+            if (err) console.error('Error al borrar el archivo:', err);
+            else console.log('Archivo eliminado');
+          });
+        }
+      });
     });
   } catch (err) {
     console.error('Error en la ruta de análisis:', err);
     return res.status(500).json({ error: 'Error procesando la solicitud' });
   }
-};
+}
+
+
 
 
 

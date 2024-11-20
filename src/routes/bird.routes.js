@@ -9,7 +9,7 @@ const birdRouter = Router()
 birdRouter.get("/bird", getBirds);
 birdRouter.get("/bird/:searchValue", getBird)
 birdRouter.get("/countBirdByMunicipality", getBirdCountByMunicipality)
-birdRouter.get("/bird/detectByAudio", analyzeAudio);
+birdRouter.post("/bird/detectByAudio", analyzeAudio);
 
 
 export default birdRouter;
