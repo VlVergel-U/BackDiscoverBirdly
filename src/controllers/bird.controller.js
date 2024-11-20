@@ -452,19 +452,30 @@ export async function analyzeAudio(req, res) {
       console.log(`Script a ejecutar: ${scriptPath}`);
 
       exec(`python "${scriptPath}" ${lat} ${lon} ${date} "${filePath}"`, (error, stdout, stderr) => {
+        
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error(`Error al eliminar el archivo: ${unlinkErr.message}`);
+          } else {
+            console.log('Archivo eliminado:', filePath);
+          }
+        });
+        
         if (error) {
           console.error(`Error ejecutando el script: ${error.message}`);
           return res.status(500).json({ error: 'Error al analizar el audio' });
         }
 
-        console.log("Salida del script Python:", stdout);
+        if (stderr && !stderr.includes("INFO: Created TensorFlow Lite XNNPACK delegate for CPU.")) {
+          console.error(`Error en el script Python: ${stderr}`);
+          return res.status(500).json({ error: 'Error en el script Python', details: stderr });
+        }
 
-        // Intentamos detectar si la salida es un JSON
         let detections;
         try {
-          detections = JSON.parse(stdout); // Intentamos parsear la salida como JSON
+          detections = JSON.parse(stdout); 
         } catch (err) {
-          // Si no es un JSON válido, respondemos con el mensaje de error completo de Python
+          console.error(`Error procesando las detecciones: ${stdout}`);
           return res.status(500).json({ error: 'Error procesando las detecciones', message: stdout });
         }
 
@@ -476,10 +487,3 @@ export async function analyzeAudio(req, res) {
     return res.status(500).json({ error: 'Error procesando la solicitud' });
   }
 }
-
-
-
-
-
-  
-  
