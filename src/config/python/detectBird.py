@@ -5,7 +5,6 @@ from datetime import datetime
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
 import contextlib
-from pydub import AudioSegment
 
 @contextlib.contextmanager
 def suppress_output():
@@ -20,15 +19,6 @@ def suppress_output():
             sys.stdout = original_stdout
             sys.stderr = original_stderr
 
-def convert_wav_to_mp3(file_path):
-    # Cargar el archivo WAV
-    audio = AudioSegment.from_wav(file_path)
-    # Generar el nuevo nombre de archivo con extensión .mp3
-    mp3_path = file_path.replace(".wav", ".mp3")
-    # Exportar el archivo como MP3
-    audio.export(mp3_path, format="mp3")
-    return mp3_path
-
 try:
     lat = float(sys.argv[1])
     lon = float(sys.argv[2])
@@ -39,10 +29,6 @@ try:
 
     if not os.path.exists(file_path):
         raise FileNotFoundError("El archivo no existe en la ruta proporcionada")
-
-    # Si el archivo es .wav, lo convertimos a .mp3
-    if file_path.lower().endswith(".wav"):
-        file_path = convert_wav_to_mp3(file_path)
 
     with suppress_output():
         analyzer = Analyzer()

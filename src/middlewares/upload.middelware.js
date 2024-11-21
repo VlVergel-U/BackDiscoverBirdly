@@ -21,7 +21,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     console.log(file.mimetype);
-    const validAudioTypes = ['audio/mp3', 'audio/wave', 'audio/mpeg', 'audio/ogg'];
+    const validAudioTypes = ['audio/mp3', 'audio/wave', 'audio/wav', 'audio/mpeg', 'audio/ogg'];
     if (validAudioTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {

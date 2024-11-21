@@ -431,7 +431,7 @@ export async function analyzeAudio(req, res) {
         return res.status(400).json({ error: 'No se ha subido ningún archivo' });
       }
 
-      const validAudioTypes = ['audio/mp3', 'audio/wave', 'audio/mpeg', 'audio/ogg'];
+      const validAudioTypes = ['audio/mp3', 'audio/wave', 'audio/wav', 'audio/mpeg', 'audio/ogg'];
       if (!validAudioTypes.includes(req.file.mimetype)) {
         return res.status(400).json({ error: 'Tipo de archivo no válido. Solo se permiten archivos de audio.' });
       }
