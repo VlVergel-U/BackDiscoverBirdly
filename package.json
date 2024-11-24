@@ -1,5 +1,5 @@
 {
-  "name": "backgb",
+  "name": "backdiscoverbirdly",
   "version": "1.0.0",
   "description": "backend with mongodb",
   "main": "app.js",
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/VlVergel-U/BackGB.git"
   },
-  "author": "Ecosfera",
+  "author": "discoverbirdlyteam",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/VlVergel-U/BackGB/issues"
